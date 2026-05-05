@@ -1,0 +1,65 @@
+{% extends 'chat/base.html' %}
+{% block title %}Profile — Snickr{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <!-- User info card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="snickr-avatar snickr-avatar-lg">
+                        {{ user.username|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <h5 class="mb-0 fw-bold">
+                            {{ user.nickname|default:user.username }}
+                        </h5>
+                        <div class="text-muted small">@{{ user.username }}</div>
+                        <div class="text-muted small">{{ user.email }}</div>
+                        <div class="text-muted small">
+                            Joined {{ user.created_at|date:"M d, Y" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message history (query 6) -->
+            <h6 class="text-muted text-uppercase small mb-2">
+                <i class="bi bi-clock-history me-1"></i> Your Message History
+            </h6>
+
+            {% if my_messages %}
+            <div class="list-group shadow-sm">
+                {% for msg in my_messages %}
+                <a href="{% url 'channel' workspace_id=msg.workspace_id channel_id=msg.channel_id %}"
+                   class="list-group-item list-group-item-action">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small fw-semibold">
+                            {% if msg.channel_name %}
+                                <i class="bi bi-hash"></i> {{ msg.channel_name }}
+                            {% else %}
+                                <i class="bi bi-person"></i> Direct Message
+                            {% endif %}
+                            <span class="text-muted fw-normal">in {{ msg.workspace_name }}</span>
+                        </span>
+                        <small class="text-muted">
+                            {{ msg.posted_at|date:"M d, Y" }} {{ msg.posted_at|time:"H:i" }}
+                        </small>
+                    </div>
+                    <div class="text-truncate">{{ msg.body }}</div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center text-muted mt-4">
+                <i class="bi bi-chat-dots fs-1"></i>
+                <p class="mt-2">You haven't posted any messages yet.</p>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

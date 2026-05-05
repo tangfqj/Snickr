@@ -1,0 +1,62 @@
+{% extends 'chat/base.html' %}
+{% block title %}Search — Snickr{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+
+            <h4 class="fw-bold mb-3"><i class="bi bi-search me-1"></i> Search Messages</h4>
+
+            <!-- Search bar -->
+            <form method="GET" action="{% url 'search' %}" class="d-flex gap-2 mb-4">
+                {{ search_form.keyword }}
+                <button class="btn btn-primary" type="submit">Search</button>
+            </form>
+
+            <!-- Results -->
+            {% if keyword %}
+                <p class="text-muted small mb-3">
+                    {% if results %}
+                        {{ results|length }} result{{ results|length|pluralize }}
+                        for <strong>"{{ keyword }}"</strong>
+                    {% else %}
+                        No results for <strong>"{{ keyword }}"</strong>
+                    {% endif %}
+                </p>
+
+                {% if results %}
+                <div class="list-group shadow-sm">
+                    {% for msg in results %}
+                    <a href="{% url 'channel' workspace_id=msg.workspace_id channel_id=msg.channel_id %}"
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-semibold">
+                                {% if msg.channel_name %}
+                                    <i class="bi bi-hash"></i> {{ msg.channel_name }}
+                                {% else %}
+                                    <i class="bi bi-person"></i> Direct Message
+                                {% endif %}
+                                <span class="text-muted fw-normal small">
+                                    in {{ msg.workspace_name }}
+                                </span>
+                            </span>
+                            <small class="text-muted">
+                                {{ msg.posted_at|date:"M d, Y" }} {{ msg.posted_at|time:"H:i" }}
+                            </small>
+                        </div>
+                        <div class="text-muted small mb-1">@{{ msg.username }}</div>
+                        <div>{{ msg.body }}</div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+            {% else %}
+                <p class="text-muted">Enter a keyword above to search across all your accessible messages.</p>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

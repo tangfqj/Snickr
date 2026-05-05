@@ -1,0 +1,39 @@
+{% extends 'chat/base.html' %}
+{% block title %}Login — Snickr{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center snickr-auth-page">
+    <div class="card snickr-auth-card shadow-sm">
+        <div class="card-body p-4">
+            <h4 class="mb-1 fw-bold">
+                <i class="bi bi-chat-square-dots-fill text-primary me-1"></i> Snickr
+            </h4>
+            <p class="text-muted mb-4">Sign in to your account</p>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    {{ form.username }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    {{ form.password }}
+                </div>
+                <button class="btn btn-primary w-100" type="submit">Sign in</button>
+            </form>
+
+            <hr>
+            <p class="text-center mb-0 small">
+                No account? <a href="{% url 'register' %}">Register here</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

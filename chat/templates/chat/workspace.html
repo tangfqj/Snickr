@@ -1,0 +1,217 @@
+{% extends 'chat/base.html' %}
+{% block title %}{{ workspace.name }} — Snickr{% endblock %}
+
+{% block content %}
+<div class="snickr-layout">
+
+    <!-- ========================================================
+         SIDEBAR
+    ========================================================= -->
+    <aside class="snickr-sidebar">
+
+        <div class="snickr-sidebar-header">
+            <span class="fw-bold text-truncate">{{ workspace.name }}</span>
+            <a href="{% url 'workspace_list' %}" class="btn btn-sm btn-outline-light py-0">
+                <i class="bi bi-grid"></i>
+            </a>
+        </div>
+
+        <nav class="snickr-sidebar-nav">
+
+            <!-- Public channels -->
+            <div class="snickr-sidebar-section">Channels</div>
+            {% for ch in my_public %}
+            <a href="{% url 'channel' workspace_id=workspace_id channel_id=ch.channel_id %}"
+               class="snickr-sidebar-link">
+                <i class="bi bi-hash"></i> {{ ch.name }}
+            </a>
+            {% empty %}
+            <span class="snickr-sidebar-empty">No public channels</span>
+            {% endfor %}
+
+            <!-- Private channels -->
+            {% if my_private %}
+            <div class="snickr-sidebar-section mt-2">Private</div>
+            {% for ch in my_private %}
+            <a href="{% url 'channel' workspace_id=workspace_id channel_id=ch.channel_id %}"
+               class="snickr-sidebar-link">
+                <i class="bi bi-lock-fill"></i> {{ ch.name }}
+            </a>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Direct messages — now shows the other user's name -->
+            {% if my_direct %}
+            <div class="snickr-sidebar-section mt-2">Direct Messages</div>
+            {% for ch in my_direct %}
+            <a href="{% url 'channel' workspace_id=workspace_id channel_id=ch.channel_id %}"
+               class="snickr-sidebar-link">
+                <i class="bi bi-person"></i>
+                {{ ch.other_nickname|default:ch.other_username }}
+            </a>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Create channel button -->
+            <button class="snickr-sidebar-link snickr-sidebar-add w-100 text-start border-0 bg-transparent mt-2"
+                    data-bs-toggle="modal" data-bs-target="#createChannelModal">
+                <i class="bi bi-plus-circle"></i> Add channel
+            </button>
+
+            <!-- Joinable public channels -->
+            {% if joinable %}
+            <div class="snickr-sidebar-section mt-2">Browse</div>
+            {% for ch in joinable %}
+            <form method="POST"
+                  action="{% url 'join_channel' workspace_id=workspace_id channel_id=ch.channel_id %}">
+                {% csrf_token %}
+                <button type="submit" class="snickr-sidebar-link snickr-sidebar-join w-100 text-start border-0 bg-transparent">
+                    <i class="bi bi-hash"></i> {{ ch.name }}
+                    <span class="badge bg-secondary ms-1 small">Join</span>
+                </button>
+            </form>
+            {% endfor %}
+            {% endif %}
+
+        </nav>
+    </aside>
+
+    <!-- ========================================================
+         MAIN PANEL
+    ========================================================= -->
+    <main class="snickr-main p-4">
+
+        <h5 class="fw-bold mb-1">{{ workspace.name }}</h5>
+        <p class="text-muted small mb-4">{{ workspace.description }}</p>
+
+        <!-- Members -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-people-fill me-1"></i> Members</span>
+                {% if is_admin %}
+                <button class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal" data-bs-target="#inviteWorkspaceModal">
+                    <i class="bi bi-person-plus"></i> Invite
+                </button>
+                {% endif %}
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for m in members %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="bi bi-person-circle me-1 text-muted"></i>
+                        {{ m.nickname|default:m.username }}
+                        <small class="text-muted">@{{ m.username }}</small>
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if m.is_admin %}
+                        <span class="badge bg-primary">Admin</span>
+                        {% elif is_admin %}
+                        <form method="POST"
+                              action="{% url 'promote_admin' workspace_id=workspace_id target_user_id=m.user_id %}">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-secondary" type="submit">
+                                Make admin
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <!-- Message button — hidden for yourself -->
+                        {% if m.user_id != request.session.user_id %}
+                        <form method="POST"
+                              action="{% url 'create_direct' workspace_id=workspace_id target_user_id=m.user_id %}">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-secondary" type="submit">
+                                <i class="bi bi-chat"></i> Message
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Stale pending invites (query 4) — admin only -->
+        {% if is_admin and stale %}
+        <div class="card mb-4 shadow-sm border-warning">
+            <div class="card-header bg-warning bg-opacity-10">
+                <i class="bi bi-clock-history me-1"></i>
+                Pending invites older than 5 days
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for row in stale %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span><i class="bi bi-hash"></i> {{ row.channel_name }}</span>
+                    <span class="badge bg-warning text-dark">{{ row.pending_count }} pending</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+    </main>
+</div>
+
+<!-- Create Channel Modal -->
+<div class="modal fade" id="createChannelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Channel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="create_channel" value="1">
+                <div class="modal-body">
+                    {% if channel_form.non_field_errors %}
+                    <div class="alert alert-danger py-2">{{ channel_form.non_field_errors }}</div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label class="form-label">Channel name</label>
+                        {{ channel_form.name }}
+                        {% if channel_form.name.errors %}
+                        <div class="text-danger small">{{ channel_form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        {{ channel_form.channel_type }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Invite to Workspace Modal -->
+{% if is_admin %}
+<div class="modal fade" id="inviteWorkspaceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Invite to {{ workspace.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'invite_to_workspace' workspace_id=workspace_id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <label class="form-label">Username</label>
+                    {{ invite_form.username }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

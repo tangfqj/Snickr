@@ -1,0 +1,75 @@
+{% extends 'chat/base.html' %}
+{% block title %}Invitations — Snickr{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <h4 class="fw-bold mb-4"><i class="bi bi-bell-fill me-1"></i> Invitations</h4>
+
+            <!-- Workspace invitations -->
+            <h6 class="text-muted text-uppercase small mb-2">Workspace Invitations</h6>
+            {% if workspace_invites %}
+            <div class="list-group shadow-sm mb-4">
+                {% for inv in workspace_invites %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold">{{ inv.workspace_name }}</div>
+                        <small class="text-muted">
+                            Invited by @{{ inv.invited_by_username|default:"someone" }}
+                            &middot; {{ inv.invited_at|date:"M d, Y" }}
+                        </small>
+                    </div>
+                    <form method="POST"
+                          action="{% url 'accept_workspace_invite' workspace_id=inv.workspace_id %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-success" type="submit">
+                            <i class="bi bi-check-lg"></i> Accept
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-muted small mb-4">No pending workspace invitations.</div>
+            {% endif %}
+
+            <!-- Channel invitations -->
+            <h6 class="text-muted text-uppercase small mb-2">Channel Invitations</h6>
+            {% if channel_invites %}
+            <div class="list-group shadow-sm mb-4">
+                {% for inv in channel_invites %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold">
+                            <i class="bi bi-hash"></i> {{ inv.channel_name }}
+                            <span class="text-muted small">in {{ inv.workspace_name }}</span>
+                        </div>
+                        <small class="text-muted">
+                            Invited by @{{ inv.invited_by_username|default:"someone" }}
+                            &middot; {{ inv.invited_at|date:"M d, Y" }}
+                        </small>
+                    </div>
+                    <form method="POST"
+                          action="{% url 'accept_channel_invite' channel_id=inv.channel_id %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-success" type="submit">
+                            <i class="bi bi-check-lg"></i> Accept
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-muted small mb-4">No pending channel invitations.</div>
+            {% endif %}
+
+            <a href="{% url 'workspace_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back to workspaces
+            </a>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
